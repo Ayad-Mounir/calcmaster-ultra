@@ -112,28 +112,36 @@
     <div class="expression" id="expression"></div>
     <div class="display" id="display">0</div>
 
-    <!-- MODE TABS -->
+    <!-- MODE TABS - TWO ROWS -->
     <div class="mode-tabs" id="modeTabs">
-      <button class="mode-tab active" data-mode="basic">🔢</button>
-      <button class="mode-tab" data-mode="sci">🔬</button>
-      <button class="mode-tab" data-mode="prog">💻</button>
-      <button class="mode-tab" data-mode="graph">📊</button>
-      <button class="mode-tab" data-mode="age">🎂</button>
-      <button class="mode-tab" data-mode="convert">✍️</button>
-      <button class="mode-tab" data-mode="currency">💰</button>
-      <button class="mode-tab" data-mode="units">📏</button>
-      <button class="mode-tab" data-mode="voice">🎤</button>
+      <div class="mode-row top-row">
+        <button class="mode-tab active" data-mode="basic">🔢</button>
+        <button class="mode-tab" data-mode="sci">🔬</button>
+        <button class="mode-tab" data-mode="prog">💻</button>
+        <button class="mode-tab" data-mode="graph">📊</button>
+        <button class="mode-tab" data-mode="age">🎂</button>
+        <button class="mode-tab" data-mode="voice">🎤</button>
+      </div>
+      <div class="mode-row bottom-row">
+        <button class="mode-tab" data-mode="convert">✍️</button>
+        <button class="mode-tab" data-mode="currency">💰</button>
+        <button class="mode-tab" data-mode="units">📏</button>
+      </div>
     </div>
     <div class="mode-labels" id="modeLabels">
-      <span class="mode-label active" data-mode="basic">أساسي</span>
-      <span class="mode-label" data-mode="sci">علمي</span>
-      <span class="mode-label" data-mode="prog">مبرمج</span>
-      <span class="mode-label" data-mode="graph">رسم</span>
-      <span class="mode-label" data-mode="age">عمر</span>
-      <span class="mode-label" data-mode="convert">كتابة</span>
-      <span class="mode-label" data-mode="currency">عملات</span>
-      <span class="mode-label" data-mode="units">وحدات</span>
-      <span class="mode-label" data-mode="voice">صوت</span>
+      <div class="mode-row top-row">
+        <span class="mode-label active" data-mode="basic">أساسي</span>
+        <span class="mode-label" data-mode="sci">علمي</span>
+        <span class="mode-label" data-mode="prog">مبرمج</span>
+        <span class="mode-label" data-mode="graph">رسم</span>
+        <span class="mode-label" data-mode="age">عمر</span>
+        <span class="mode-label" data-mode="voice">صوت</span>
+      </div>
+      <div class="mode-row bottom-row">
+        <span class="mode-label" data-mode="convert">كتابة</span>
+        <span class="mode-label" data-mode="currency">عملات</span>
+        <span class="mode-label" data-mode="units">وحدات</span>
+      </div>
     </div>
 
     <!-- === SCIENTIFIC PANEL === -->

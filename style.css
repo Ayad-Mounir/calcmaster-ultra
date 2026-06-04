@@ -316,24 +316,38 @@ header {
 }
 .display.count-pop { animation: countPop 0.15s ease; }
 
-/* Mode Tabs */
+/* Mode Tabs - Two Rows */
 .mode-tabs {
   display: flex;
-  gap: 3px;
-  padding: 3px;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px;
   background: var(--bg-glass);
   border-radius: var(--radius-sm);
   margin-bottom: 2px;
   flex-shrink: 0;
   border: 1px solid var(--border-color);
 }
-.mode-tab {
+.mode-row {
+  display: flex;
+  gap: 4px;
+}
+.top-row { justify-content: center; }
+.bottom-row { justify-content: center; }
+.top-row .mode-tab {
   flex: 1;
-  padding: 6px 2px;
+  max-width: 56px;
+}
+.bottom-row .mode-tab {
+  flex: 1;
+  max-width: 56px;
+}
+.mode-tab {
+  padding: 10px 4px;
   border: none;
   background: transparent;
-  font-size: 16px;
-  border-radius: 10px;
+  font-size: 22px;
+  border-radius: 12px;
   cursor: pointer;
   transition: all 0.25s ease;
 }
@@ -341,23 +355,36 @@ header {
   background: var(--accent);
   color: #fff;
   box-shadow: 0 3px 12px var(--accent-glow);
-  transform: scale(1.04);
+  transform: scale(1.08);
 }
 
 /* Mode Labels (below tabs) */
 .mode-labels {
   display: flex;
-  gap: 3px;
+  flex-direction: column;
+  gap: 0;
   padding: 0 3px 6px;
   flex-shrink: 0;
 }
-.mode-label {
+.mode-labels .mode-row {
+  display: flex;
+  gap: 4px;
+}
+.mode-labels .top-row .mode-label {
   flex: 1;
+  max-width: 56px;
+}
+.mode-labels .bottom-row .mode-label {
+  flex: 1;
+  max-width: 56px;
+}
+.mode-label {
   text-align: center;
   font-size: 10px;
   font-weight: 700;
   color: var(--text-muted);
   letter-spacing: 0.3px;
+  padding: 2px 0;
 }
 .mode-label.active { color: var(--accent); }
 
@@ -787,6 +814,7 @@ footer span { font-size: 10px; color: var(--text-muted); font-weight: 500; }
   .btn { font-size: 20px; border-radius: var(--radius-xs); }
   header { padding: 8px 12px 4px; }
   .brand-text { font-size: 14px; }
-  .mode-tab { font-size: 14px; padding: 5px 2px; }
+  .top-row .mode-tab { font-size: 18px; padding: 6px 2px; max-width: 44px; }
+  .bottom-row .mode-tab { font-size: 18px; padding: 6px 2px; max-width: 44px; }
   .mode-label { font-size: 9px; }
 }
