@@ -74,6 +74,9 @@ const Calc = (() => {
     // Commodity
     commodityGrid: $('#commodityGrid'), commodityStatus: $('#commodityStatus'),
     commodityRefresh: $('#commodityRefresh'),
+    commModalOverlay: $('#commModalOverlay'), commModalTitle: $('#commModalTitle'),
+    commModalBody: $('#commModalBody'), commModalRate: $('#commModalRate'),
+    commModalTime: $('#commModalTime'), commModalClose: $('#commModalClose'),
   };
 
   // ============ UNIT DEFINITIONS ============
@@ -813,7 +816,7 @@ const Calc = (() => {
     const metalDefs = COMMODITY_DEFS.filter(d => d.api !== 'oil');
     const metalPromises = metalDefs.map(async (def) => {
       try {
-        let res = await fetch(def.api + '?t=' + Date.now());
+        let res = await fetch(def.api);
         let data = await res.json();
         if (data && data.price) {
           results[def.id] = { priceUSD: data.price, time: data.updatedAt || data.updatedAtReadable || '' };
@@ -880,7 +883,7 @@ const Calc = (() => {
     COMMODITY_DEFS.forEach(def => {
       const data = cache ? cache[def.id] : null;
       if (!data) {
-        html += '<div class="commodity-card"><div class="commodity-card-header">' +
+        html += '<div class="commodity-card" data-comm-id="' + def.id + '"><div class="commodity-card-header">' +
           '<span class="commodity-card-icon">' + def.icon + '</span>' +
           '<span class="commodity-card-name">' + def.name + '</span></div>' +
           '<div style="font-size:11px;color:var(--text-secondary)">—</div></div>';
@@ -900,7 +903,7 @@ const Calc = (() => {
       let perUnitStr = perUnit < 0.01 ? perUnit.toFixed(4) : perUnit < 1 ? perUnit.toFixed(3) : perUnit.toFixed(2);
       let madStr = perUnitMAD < 0.01 ? perUnitMAD.toFixed(4) : perUnitMAD < 1 ? perUnitMAD.toFixed(3) : perUnitMAD.toFixed(2);
 
-      html += '<div class="commodity-card">' +
+      html += '<div class="commodity-card" data-comm-id="' + def.id + '">' +
         '<div class="commodity-card-header">' +
           '<span class="commodity-card-icon">' + def.icon + '</span>' +
           '<span class="commodity-card-name">' + def.name + '</span>' +
@@ -913,6 +916,92 @@ const Calc = (() => {
     });
 
     el.commodityGrid.innerHTML = html;
+
+    // Click handler for cards
+    el.commodityGrid.querySelectorAll('.commodity-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const id = card.dataset.commId;
+        showCommodityDetail(id);
+      });
+    });
+  }
+
+  function showCommodityDetail(id) {
+    const def = COMMODITY_DEFS.find(d => d.id === id);
+    const data = commoditiesCache[id];
+    if (!def || !data) return;
+
+    const priceUSD = data.priceUSD;
+    const priceMAD = priceUSD * madRate;
+    const madPerUnit = (priceUSD / def.unitFactor) * madRate;
+    const usdPerUnit = priceUSD / def.unitFactor;
+
+    // Build detail table rows
+    let rows = [];
+
+    if (def.api === 'oil') {
+      // Oil: show per liter, per 10L, per barrel
+      const barrelL = 159;
+      const units = [
+        { label: '1 ' + def.unit,            factor: 1 },
+        { label: '10 ' + def.unit,           factor: 10 },
+        { label: '50 ' + def.unit,           factor: 50 },
+        { label: '1 برميل (' + barrelL + ' لتر)', factor: barrelL },
+      ];
+      units.forEach(u => {
+        const mad = ((priceUSD / def.unitFactor) * madRate * u.factor).toFixed(2);
+        const usd = ((priceUSD / def.unitFactor) * u.factor).toFixed(2);
+        rows.push('<tr><td class="comm-detail-unit">' + u.label + '</td>' +
+          '<td class="comm-detail-mad">' + Number(mad).toLocaleString('ar', {minimumFractionDigits:2}) + ' د.م.</td>' +
+          '<td class="comm-detail-usd">$' + Number(usd).toLocaleString('ar', {minimumFractionDigits:2}) + '</td></tr>');
+      });
+    } else if (def.id === 'gas') {
+      // Natural gas
+      const units = [
+        { label: '1 MMBtu',       factor: 1 },
+        { label: '10 MMBtu',      factor: 10 },
+        { label: '1 kWh (~0.0034)', factor: 0.0034 },
+        { label: '100 kWh',         factor: 0.34 },
+      ];
+      units.forEach(u => {
+        const mad = (priceUSD * madRate * u.factor).toFixed(2);
+        const usd = (priceUSD * u.factor).toFixed(2);
+        rows.push('<tr><td class="comm-detail-unit">' + u.label + '</td>' +
+          '<td class="comm-detail-mad">' + Number(mad).toLocaleString('ar', {minimumFractionDigits:2}) + ' د.م.</td>' +
+          '<td class="comm-detail-usd">$' + Number(usd).toLocaleString('ar', {minimumFractionDigits:2}) + '</td></tr>');
+      });
+    } else {
+      // Metals: show per gram, per 10g, per 100g, per kg, per oz
+      const oz = 31.1035;
+      const units = [
+        { label: '1 غرام',  factor: 1 },
+        { label: '10 غرام', factor: 10 },
+        { label: '100 غرام', factor: 100 },
+        { label: '1 كيلو',   factor: 1000 },
+        { label: '1 أونصة (' + oz + ' غ)', factor: oz },
+      ];
+      units.forEach(u => {
+        const mad = ((priceUSD / def.unitFactor) * madRate * u.factor).toFixed(2);
+        const usd = ((priceUSD / def.unitFactor) * u.factor).toFixed(2);
+        rows.push('<tr><td class="comm-detail-unit">' + u.label + '</td>' +
+          '<td class="comm-detail-mad">' + Number(mad).toLocaleString('ar', {minimumFractionDigits:2}) + ' د.م.</td>' +
+          '<td class="comm-detail-usd">$' + Number(usd).toLocaleString('ar', {minimumFractionDigits:2}) + '</td></tr>');
+      });
+    }
+
+    el.commModalTitle.textContent = def.icon + ' ' + def.name;
+    el.commModalBody.innerHTML =
+      '<table class="comm-detail-table">' +
+        '<tr><th>الوحدة</th><th>بالدرهم</th><th>بالدولار</th></tr>' +
+        rows.join('') +
+      '</table>';
+    el.commModalRate.textContent = '💱 1 USD = ' + madRate.toFixed(4) + ' MAD';
+    let timeStr = '';
+    if (data.time) {
+      try { timeStr = '🕐 ' + new Date(data.time).toLocaleTimeString('ar'); } catch(e) { timeStr = ''; }
+    }
+    el.commModalTime.textContent = timeStr;
+    el.commModalOverlay.classList.add('open');
   }
 
   // ============ UNITS ============
@@ -1144,6 +1233,12 @@ const Calc = (() => {
 
     // Commodity
     el.commodityRefresh.addEventListener('click', fetchCommodities);
+
+    // Commodity modal close
+    el.commModalClose.addEventListener('click', () => el.commModalOverlay.classList.remove('open'));
+    el.commModalOverlay.addEventListener('click', (e) => {
+      if (e.target === el.commModalOverlay) el.commModalOverlay.classList.remove('open');
+    });
 
     // Display click to copy
     el.display.addEventListener('click', () => {
