@@ -71,6 +71,9 @@ const Calc = (() => {
     // Voice
     voiceRecordBtn: $('#voiceRecordBtn'), voiceStatus: $('#voiceStatus'),
     voiceTranscript: $('#voiceTranscript'), voiceResult: $('#voiceResult'),
+    // Commodity
+    commodityGrid: $('#commodityGrid'), commodityStatus: $('#commodityStatus'),
+    commodityRefresh: $('#commodityRefresh'),
   };
 
   // ============ UNIT DEFINITIONS ============
@@ -188,7 +191,7 @@ const Calc = (() => {
     const panelMap = {
       sci: '#sciPanel', prog: '#progPanel', graph: '#graphPanel',
       age: '#agePanel', convert: '#convertPanel', currency: '#currencyPanel',
-      units: '#unitsPanel', voice: '#voicePanel'
+      units: '#unitsPanel', voice: '#voicePanel', commodity: '#commodityPanel'
     };
     if (panelMap[mode]) {
       document.querySelector(panelMap[mode]).classList.add('visible');
@@ -225,6 +228,10 @@ const Calc = (() => {
     } else if (mode === 'voice') {
       setDisplay('🎤', false);
       setExpression('');
+    } else if (mode === 'commodity') {
+      setDisplay('💎', false);
+      setExpression('');
+      fetchCommodities();
     }
     // Update programmer display if needed
     if (mode === 'prog') updateProgDisplay();
@@ -266,7 +273,7 @@ const Calc = (() => {
   }
 
   function handleValue(val) {
-    if (['currency','units','age','convert','graph','voice'].includes(state.mode)) return;
+    if (['currency','units','age','convert','graph','voice','commodity'].includes(state.mode)) return;
     if (state.justEvaluated && !state.newNumber) {
       state.display = '0';
       state.expression = '';
@@ -286,7 +293,7 @@ const Calc = (() => {
   }
 
   function handleAction(action) {
-    if (['currency','units','age','convert','graph','voice'].includes(state.mode)) return;
+    if (['currency','units','age','convert','graph','voice','commodity'].includes(state.mode)) return;
     switch (action) {
       case 'clear':
         setDisplay('0'); setExpression(''); state.newNumber = true; state.justEvaluated = false;
@@ -760,6 +767,154 @@ const Calc = (() => {
     el.currRate.textContent = '1 ' + from + ' = ' + (rateTo / rateFrom).toFixed(6) + ' ' + to;
   }
 
+  // ============ COMMODITIES ============
+  const COMMODITY_DEFS = [
+    { id:'gold',    icon:'🥇', name:'الذهب',     api:'https://api.gold-api.com/price/XAU', unit:'غ',      unitFactor: 31.1035 },
+    { id:'silver',  icon:'🥈', name:'الفضة',     api:'https://api.gold-api.com/price/XAG', unit:'غ',      unitFactor: 31.1035 },
+    { id:'platinum',icon:'🪙', name:'البلاتين',   api:'https://api.gold-api.com/price/XPT', unit:'غ',      unitFactor: 31.1035 },
+    { id:'palladium',icon:'🔮', name:'البلاديوم',  api:'https://api.gold-api.com/price/XPD', unit:'غ',      unitFactor: 31.1035 },
+    { id:'copper',  icon:'🔶', name:'النحاس',     api:'https://api.gold-api.com/price/HG',  unit:'غ',      unitFactor: 453.592 },
+    { id:'brent',   icon:'🛢️', name:'برنت',       api:'oil',                                unit:'لتر',    unitFactor: 159 },
+    { id:'wti',     icon:'🛢️', name:'WTI',         api:'oil',                                unit:'لتر',    unitFactor: 159 },
+    { id:'gasoline',icon:'⛽', name:'البنزين',     api:'oil',                                unit:'لتر',    unitFactor: 3.785 },
+    { id:'diesel',  icon:'⛽', name:'المازوت',     api:'oil',                                unit:'لتر',    unitFactor: 3.785 },
+    { id:'gas',     icon:'🔥', name:'الغاز الطبيعي',api:'oil',                                unit:'MMBtu', unitFactor: 1 },
+  ];
+
+  let commoditiesCache = JSON.parse(localStorage.getItem('ultraCommodities') || '{}');
+  let commoditiesCacheTime = parseInt(localStorage.getItem('ultraCommoditiesTime') || '0');
+  let madRate = 0;
+
+  async function fetchCommodities() {
+    el.commodityGrid.innerHTML = '<div class="commodity-loading">⏳ جاري تحميل الأسعار...</div>';
+    el.commodityStatus.textContent = 'جارٍ التحديث...';
+
+    // 1. Fetch USD→MAD rate
+    try {
+      let res = await fetch('https://open.er-api.com/v6/latest/USD');
+      let data = await res.json();
+      if (data.rates && data.rates.MAD) {
+        madRate = data.rates.MAD;
+      } else {
+        // Fallback to cached rate
+        if (commoditiesCache._madRate) madRate = commoditiesCache._madRate;
+        else madRate = 10; // approximate
+      }
+    } catch(e) {
+      if (commoditiesCache._madRate) madRate = commoditiesCache._madRate;
+      else madRate = 10;
+    }
+
+    const results = {};
+    let oilPrices = null;
+    let success = false;
+
+    // 2. Fetch metals from gold-api
+    const metalDefs = COMMODITY_DEFS.filter(d => d.api !== 'oil');
+    const metalPromises = metalDefs.map(async (def) => {
+      try {
+        let res = await fetch(def.api + '?t=' + Date.now());
+        let data = await res.json();
+        if (data && data.price) {
+          results[def.id] = { priceUSD: data.price, time: data.updatedAt || data.updatedAtReadable || '' };
+          return true;
+        }
+      } catch(e) {}
+      return false;
+    });
+    await Promise.all(metalPromises);
+    if (metalDefs.some(d => results[d.id])) success = true;
+
+    // 3. Fetch oil prices from oilpriceapi demo
+    try {
+      let res = await fetch('https://api.oilpriceapi.com/v1/demo/prices?t=' + Date.now());
+      let data = await res.json();
+      if (data && data.data && data.data.prices) {
+        oilPrices = {};
+        data.data.prices.forEach(p => { oilPrices[p.code] = { price: p.price, time: p.updated_at }; });
+      }
+    } catch(e) {}
+
+    // Map oil prices
+    if (oilPrices) {
+      const oilMap = {
+        brent: { code: 'BRENT_CRUDE_USD', factor: 159 },
+        wti: { code: 'WTI_USD', factor: 159 },
+        gasoline: { code: 'GASOLINE_USD', factor: 3.785 },
+        diesel: { code: 'DIESEL_USD', factor: 3.785 },
+        gas: { code: 'NATURAL_GAS_USD', factor: 1 },
+      };
+      COMMODITY_DEFS.filter(d => d.api === 'oil').forEach(def => {
+        const om = oilMap[def.id];
+        if (om && oilPrices[om.code]) {
+          results[def.id] = { priceUSD: oilPrices[om.code].price, time: oilPrices[om.code].time };
+        }
+      });
+      if (COMMODITY_DEFS.some(d => d.api === 'oil' && results[d.id])) success = true;
+    }
+
+    // 4. Cache results
+    if (success) {
+      results._madRate = madRate;
+      commoditiesCache = results;
+      commoditiesCacheTime = Date.now();
+      localStorage.setItem('ultraCommodities', JSON.stringify(results));
+      localStorage.setItem('ultraCommoditiesTime', commoditiesCacheTime);
+      el.commodityStatus.textContent = '✅ آخر تحديث: ' + new Date().toLocaleTimeString('ar');
+    } else {
+      // Try to use cache
+      if (Object.keys(commoditiesCache).length > 1) {
+        el.commodityStatus.textContent = '⚠️ باستخدام آخر الأسعار المخزنة';
+      } else {
+        el.commodityStatus.textContent = '❌ فشل التحميل';
+      }
+    }
+
+    renderCommodities();
+  }
+
+  function renderCommodities() {
+    const cache = Object.keys(commoditiesCache).length > 1 ? commoditiesCache : null;
+    let html = '';
+
+    COMMODITY_DEFS.forEach(def => {
+      const data = cache ? cache[def.id] : null;
+      if (!data) {
+        html += '<div class="commodity-card"><div class="commodity-card-header">' +
+          '<span class="commodity-card-icon">' + def.icon + '</span>' +
+          '<span class="commodity-card-name">' + def.name + '</span></div>' +
+          '<div style="font-size:11px;color:var(--text-secondary)">—</div></div>';
+        return;
+      }
+      let priceUSD = data.priceUSD;
+      let priceMAD = priceUSD * madRate;
+      let perUnit = def.unitFactor > 1 ? priceUSD / def.unitFactor : priceUSD;
+      let perUnitMAD = perUnit * madRate;
+      let timeStr = '';
+      if (data.time) {
+        try { timeStr = new Date(data.time).toLocaleTimeString('ar'); } catch(e) { timeStr = data.time; }
+      }
+
+      // Format prices
+      let usdStr = priceUSD < 1 ? priceUSD.toFixed(4) : priceUSD.toLocaleString('ar', {maximumFractionDigits:2});
+      let perUnitStr = perUnit < 0.01 ? perUnit.toFixed(4) : perUnit < 1 ? perUnit.toFixed(3) : perUnit.toFixed(2);
+      let madStr = perUnitMAD < 0.01 ? perUnitMAD.toFixed(4) : perUnitMAD < 1 ? perUnitMAD.toFixed(3) : perUnitMAD.toFixed(2);
+
+      html += '<div class="commodity-card">' +
+        '<div class="commodity-card-header">' +
+          '<span class="commodity-card-icon">' + def.icon + '</span>' +
+          '<span class="commodity-card-name">' + def.name + '</span>' +
+        '</div>' +
+        '<div class="commodity-card-price">' + madStr + '</div>' +
+        '<div class="commodity-card-unit">د.م. / ' + def.unit + '</div>' +
+        '<div class="commodity-card-usd">$' + perUnitStr + ' / ' + def.unit + '</div>' +
+        (timeStr ? '<div class="commodity-card-time">🕐 ' + timeStr + '</div>' : '') +
+      '</div>';
+    });
+
+    el.commodityGrid.innerHTML = html;
+  }
+
   // ============ UNITS ============
   function updateUnits() {
     let cat = el.unitsCategory.value;
@@ -987,10 +1142,13 @@ const Calc = (() => {
     el.voiceRecordBtn.addEventListener('click', toggleVoice);
     el.voiceToggle.addEventListener('click', () => { switchMode('voice'); });
 
+    // Commodity
+    el.commodityRefresh.addEventListener('click', fetchCommodities);
+
     // Display click to copy
     el.display.addEventListener('click', () => {
       let txt = getDisplay();
-      if (txt && txt !== '0' && !txt.startsWith('🔢') && !txt.startsWith('🎂') && !txt.startsWith('📊') && !txt.startsWith('💰') && !txt.startsWith('📏') && !txt.startsWith('🎤')) {
+      if (txt && txt !== '0' && !txt.startsWith('🔢') && !txt.startsWith('🎂') && !txt.startsWith('📊') && !txt.startsWith('💰') && !txt.startsWith('📏') && !txt.startsWith('🎤') && !txt.startsWith('💎')) {
         if (navigator.clipboard) {
           navigator.clipboard.writeText(parseNum(txt).toString()).then(() => showToast('📋 تم النسخ')).catch(() => {});
         } else {
@@ -1018,8 +1176,8 @@ const Calc = (() => {
     setDisplay('0');
 
     // Show version
-    el.headerVer.textContent = 'v2.1';
-    if (el.verDisplay) el.verDisplay.textContent = '2.1';
+    el.headerVer.textContent = 'v2.2';
+    if (el.verDisplay) el.verDisplay.textContent = '2.2';
 
     // Initial currency fetch
     if (Object.keys(cachedRates).length > 0) {

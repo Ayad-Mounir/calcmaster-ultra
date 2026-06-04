@@ -1,4 +1,4 @@
-const CACHE = "cu-v2";
+const CACHE = "cu-v2-2";
 const VERSION_CHECK = "/calcmaster-ultra/version.json";
 
 self.addEventListener("install", (e) => {

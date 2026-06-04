@@ -10,9 +10,9 @@
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon.svg">
   <title>CalcMaster Ultra</title>
-  <meta name="app-version" content="2.1">
+  <meta name="app-version" content="2.2">
   <meta name="app-build" content="2026-06-04">
-  <link rel="stylesheet" href="style.css?v=2.1">
+  <link rel="stylesheet" href="style.css?v=2.2">
   <style>
     #updateBanner{display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#7c6aff,#f472b6);color:#fff;padding:12px 24px;border-radius:12px;cursor:pointer;z-index:9999;font-size:14px;box-shadow:0 4px 20px rgba(124,106,255,0.4);animation:slideUp 0.4s ease;direction:rtl}
     @keyframes slideUp{from{transform:translateX(-50%) translateY(30px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
@@ -126,6 +126,7 @@
         <button class="mode-tab" data-mode="convert">✍️</button>
         <button class="mode-tab" data-mode="currency">💰</button>
         <button class="mode-tab" data-mode="units">📏</button>
+        <button class="mode-tab" data-mode="commodity">💎</button>
       </div>
     </div>
     <div class="mode-labels" id="modeLabels">
@@ -141,6 +142,7 @@
         <span class="mode-label" data-mode="convert">كتابة</span>
         <span class="mode-label" data-mode="currency">عملات</span>
         <span class="mode-label" data-mode="units">وحدات</span>
+        <span class="mode-label" data-mode="commodity">سلع</span>
       </div>
     </div>
 
@@ -328,6 +330,15 @@
       <div class="voice-result" id="voiceResult"></div>
     </div>
 
+    <!-- === COMMODITY PANEL === -->
+    <div class="commodity-panel panel" id="commodityPanel">
+      <div class="commodity-toolbar">
+        <div class="commodity-status" id="commodityStatus"></div>
+        <button class="commodity-refresh" id="commodityRefresh">🔄 تحديث</button>
+      </div>
+      <div class="commodity-grid" id="commodityGrid"></div>
+    </div>
+
     <!-- MEMORY BAR -->
     <div class="memory-bar">
       <button class="mem-btn mem-mc" data-mem="mc">MC</button>
@@ -368,9 +379,9 @@
   </div>
 
   <footer>
-    <span>CalcMaster Ultra v<span id="verDisplay">2.1</span></span>
+    <span>CalcMaster Ultra v<span id="verDisplay">2.2</span></span>
   </footer>
 </div>
-<script src="script.js?v=2.1"></script>
+<script src="script.js?v=2.2"></script>
 </body>
 </html>
