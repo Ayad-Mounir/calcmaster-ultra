@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="192" y2="192">
+      <stop offset="0%" stop-color="#7c6aff"/>
+      <stop offset="100%" stop-color="#f472b6"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="36" fill="url(#bg)"/>
+  <!-- Grid hint (calculator) -->
+  <g stroke="rgba(255,255,255,0.12)" stroke-width="1.5" fill="none">
+    <rect x="40" y="40" width="112" height="112" rx="8"/>
+    <line x1="40" y1="78" x2="152" y2="78"/>
+    <line x1="40" y1="116" x2="152" y2="116"/>
+    <line x1="68" y1="78" x2="68" y2="152"/>
+    <line x1="96" y1="78" x2="96" y2="152"/>
+    <line x1="124" y1="78" x2="124" y2="152"/>
+  </g>
+  <!-- C letter -->
+  <text x="96" y="114" text-anchor="middle" fill="white" font-size="52" font-weight="800" font-family="system-ui, -apple-system, sans-serif">C</text>
+  <!-- ULTRA label -->
+  <text x="96" y="158" text-anchor="middle" fill="rgba(255,255,255,0.6)" font-size="14" font-weight="700" font-family="system-ui, -apple-system, sans-serif" letter-spacing="3">ULTRA</text>
+</svg>

@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0a0a1a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json?v=2.1">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <title>CalcMaster Ultra</title>
+  <meta name="app-version" content="2.1">
+  <meta name="app-build" content="2026-06-04">
+  <link rel="stylesheet" href="style.css?v=2.1">
+  <style>
+    #updateBanner{display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#7c6aff,#f472b6);color:#fff;padding:12px 24px;border-radius:12px;cursor:pointer;z-index:9999;font-size:14px;box-shadow:0 4px 20px rgba(124,106,255,0.4);animation:slideUp 0.4s ease;direction:rtl}
+    @keyframes slideUp{from{transform:translateX(-50%) translateY(30px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
+  </style>
+  <script>
+  (function(){
+    if (location.search.includes('reset')) {
+      localStorage.clear();
+      if ('caches' in window) { caches.keys().then(function(ks){ ks.forEach(function(k){ caches.delete(k); }); }); }
+      if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistration().then(function(r){ if (r) r.unregister(); }); }
+      setTimeout(function(){ location.href = location.pathname; }, 300);
+      return;
+    }
+    function showUpdateBanner() {
+      var b = document.getElementById('updateBanner') || (function(){
+        var el = document.createElement('div'); el.id = 'updateBanner';
+        el.textContent = '🔄 تحديث جديد متوفر — اضغط للتطبيق';
+        el.onclick = function(){
+          if ('serviceWorker' in navigator && navigator.serviceWorker.controller)
+            navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+          localStorage.clear();
+          if ('caches' in window) { caches.keys().then(function(ks){ ks.forEach(function(k){ caches.delete(k); }); }); }
+          setTimeout(function(){ location.reload(); }, 300);
+        };
+        document.body.appendChild(el);
+        return el;
+      })();
+      b.style.display = 'block';
+    }
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js')
+        .then(function(reg) {
+          if (reg.waiting) showUpdateBanner();
+          reg.addEventListener('updatefound', function() {
+            var sw = reg.installing;
+            sw.addEventListener('statechange', function() {
+              if (sw.state === 'installed' && navigator.serviceWorker.controller) showUpdateBanner();
+            });
+          });
+        }).catch(function(){});
+      var refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', function() {
+        if (!refreshing) { refreshing = true; location.reload(); }
+      });
+    }
+    var lastVer = localStorage.getItem('calcUltraVer');
+    fetch('version.json?x=' + Date.now(), { cache: 'no-store' })
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if (lastVer && lastVer !== d.version) {
+          localStorage.clear();
+          if ('caches' in window) { caches.keys().then(function(ks){ ks.forEach(function(k){ caches.delete(k); }); }); }
+          if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistration().then(function(r){ if (r) r.unregister(); }); }
+          setTimeout(function(){ location.reload(); }, 200);
+        }
+        localStorage.setItem('calcUltraVer', d.version);
+      }).catch(function(){});
+  })();
+  </script>
+</head>
+<body>
+<div class="app-container">
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-left">
+      <div class="brand">
+        <span class="brand-icon">C</span>
+        <span class="brand-text">CalcMaster</span>
+        <span class="brand-sub">Ultra</span>
+        <span class="version-badge" id="headerVer">v2.1</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="icon-btn" id="themeBtn" aria-label="السمة">🎨</button>
+      <button class="icon-btn" id="voiceToggleBtn" aria-label="صوت">🎤</button>
+      <button class="icon-btn" id="histBtn" aria-label="السجل">⏱</button>
+    </div>
+  </header>
+
+  <!-- TOAST -->
+  <div id="toast" class="toast"></div>
+
+  <!-- HISTORY -->
+  <div class="history-panel" id="historyPanel">
+    <div class="history-header">
+      <h3>📋 السجل</h3>
+      <button class="icon-btn" id="clearHist">🗑</button>
+      <button class="icon-btn" id="closeHist">✕</button>
+    </div>
+    <div class="history-list" id="historyList"></div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="calc-body">
+
+    <div class="expression" id="expression"></div>
+    <div class="display" id="display">0</div>
+
+    <!-- MODE TABS -->
+    <div class="mode-tabs" id="modeTabs">
+      <button class="mode-tab active" data-mode="basic">🔢</button>
+      <button class="mode-tab" data-mode="sci">🔬</button>
+      <button class="mode-tab" data-mode="prog">💻</button>
+      <button class="mode-tab" data-mode="graph">📊</button>
+      <button class="mode-tab" data-mode="age">🎂</button>
+      <button class="mode-tab" data-mode="convert">✍️</button>
+      <button class="mode-tab" data-mode="currency">💰</button>
+      <button class="mode-tab" data-mode="units">📏</button>
+      <button class="mode-tab" data-mode="voice">🎤</button>
+    </div>
+    <div class="mode-labels" id="modeLabels">
+      <span class="mode-label active" data-mode="basic">أساسي</span>
+      <span class="mode-label" data-mode="sci">علمي</span>
+      <span class="mode-label" data-mode="prog">مبرمج</span>
+      <span class="mode-label" data-mode="graph">رسم</span>
+      <span class="mode-label" data-mode="age">عمر</span>
+      <span class="mode-label" data-mode="convert">كتابة</span>
+      <span class="mode-label" data-mode="currency">عملات</span>
+      <span class="mode-label" data-mode="units">وحدات</span>
+      <span class="mode-label" data-mode="voice">صوت</span>
+    </div>
+
+    <!-- === SCIENTIFIC PANEL === -->
+    <div class="sci-panel panel" id="sciPanel">
+      <button class="sci-btn">sin</button>
+      <button class="sci-btn">cos</button>
+      <button class="sci-btn">tan</button>
+      <button class="sci-btn">log</button>
+      <button class="sci-btn">ln</button>
+      <button class="sci-btn">√</button>
+      <button class="sci-btn">x²</button>
+      <button class="sci-btn">x³</button>
+      <button class="sci-btn">xʸ</button>
+      <button class="sci-btn">π</button>
+      <button class="sci-btn">e</button>
+      <button class="sci-btn">!</button>
+      <button class="sci-btn">1/x</button>
+      <button class="sci-btn">|x|</button>
+      <button class="sci-btn">(</button>
+      <button class="sci-btn">)</button>
+    </div>
+
+    <!-- === PROGRAMMER PANEL === -->
+    <div class="prog-panel panel" id="progPanel">
+      <div class="base-selector">
+        <button class="base-btn active" data-base="DEC">DEC</button>
+        <button class="base-btn" data-base="HEX">HEX</button>
+        <button class="base-btn" data-base="OCT">OCT</button>
+        <button class="base-btn" data-base="BIN">BIN</button>
+      </div>
+      <div class="bitwise-row">
+        <button class="bit-btn" data-op="lshift">«</button>
+        <button class="bit-btn" data-op="rshift">»</button>
+        <button class="bit-btn" data-op="and">AND</button>
+        <button class="bit-btn" data-op="or">OR</button>
+        <button class="bit-btn" data-op="xor">XOR</button>
+        <button class="bit-btn" data-op="not">NOT</button>
+      </div>
+      <div class="prog-display" id="progDisplay">
+        <div class="prog-bin-row"><span class="prog-bin-label">BIN</span><span class="prog-bin-val" id="progBin">0</span></div>
+        <div class="prog-bin-row"><span class="prog-bin-label">HEX</span><span class="prog-bin-val" id="progHex">0</span></div>
+      </div>
+    </div>
+
+    <!-- === GRAPH PANEL === -->
+    <div class="graph-panel panel" id="graphPanel">
+      <div class="graph-toolbar">
+        <input type="text" class="graph-input" id="graphInput" placeholder="f(x) = x²" dir="ltr" spellcheck="false">
+        <button class="graph-btn" id="graphPlotBtn">📈 رسم</button>
+      </div>
+      <div class="graph-canvas-wrap">
+        <canvas id="graphCanvas" width="600" height="340"></canvas>
+      </div>
+    </div>
+
+    <!-- === AGE PANEL === -->
+    <div class="age-panel panel" id="agePanel">
+      <div class="age-inputs">
+        <div class="age-field">
+          <label>🎂 اليوم</label>
+          <select id="ageDay"></select>
+        </div>
+        <div class="age-field">
+          <label>📅 الشهر</label>
+          <select id="ageMonth"></select>
+        </div>
+        <div class="age-field">
+          <label>📆 السنة</label>
+          <select id="ageYear"></select>
+        </div>
+      </div>
+      <button class="age-btn" id="ageBtn">🔮 حساب العمر</button>
+      <div class="age-results" id="ageResults">
+        <div class="age-card"><div class="age-num" id="ageYearsVal">--</div><div class="age-unit">سنة</div></div>
+        <div class="age-card"><div class="age-num" id="ageMonthsVal">--</div><div class="age-unit">شهر</div></div>
+        <div class="age-card"><div class="age-num" id="ageWeeksVal">--</div><div class="age-unit">أسبوع</div></div>
+        <div class="age-card"><div class="age-num" id="ageDaysVal">--</div><div class="age-unit">يوم</div></div>
+        <div class="age-card"><div class="age-num" id="ageHoursVal">--</div><div class="age-unit">ساعة</div></div>
+        <div class="age-card"><div class="age-num" id="ageMinsVal">--</div><div class="age-unit">دقيقة</div></div>
+      </div>
+    </div>
+
+    <!-- === CONVERT PANEL (words) === -->
+    <div class="convert-panel panel" id="convertPanel">
+      <div class="conv-input-row">
+        <input type="number" class="conv-input" id="convInput" value="1234" step="any" min="0" placeholder="أدخل الرقم...">
+      </div>
+      <div class="lang-selector">
+        <button class="lang-btn active" data-lang="ar">🇲🇦 AR</button>
+        <button class="lang-btn" data-lang="fr">🇫🇷 FR</button>
+        <button class="lang-btn" data-lang="en">🇬🇧 EN</button>
+      </div>
+      <div class="curr-selector-simple">
+        <select class="curr-select" id="convCurrSelect">
+          <option value="">🔢 بدون عملة</option>
+          <option value="MAD">🇲🇦 درهم (MAD)</option>
+          <option value="USD">🇺🇸 دولار (USD)</option>
+          <option value="EUR">🇪🇺 يورو (EUR)</option>
+          <option value="GBP">🇬🇧 جنيه (GBP)</option>
+        </select>
+      </div>
+      <div class="convert-output" id="convertOutput" dir="auto"></div>
+    </div>
+
+    <!-- === CURRENCY PANEL (live rates) === -->
+    <div class="currency-panel panel" id="currencyPanel">
+      <div class="curr-row">
+        <div class="curr-field">
+          <label>المبلغ</label>
+          <input type="number" class="curr-input" id="currAmount" value="1" step="any" min="0">
+        </div>
+      </div>
+      <div class="curr-row curr-pair">
+        <div class="curr-field">
+          <label>من</label>
+          <select class="curr-select" id="currFrom">
+            <option value="USD">🇺🇸 USD</option>
+            <option value="EUR">🇪🇺 EUR</option>
+            <option value="GBP">🇬🇧 GBP</option>
+            <option value="MAD" selected>🇲🇦 MAD</option>
+            <option value="JPY">🇯🇵 JPY</option>
+            <option value="CAD">🇨🇦 CAD</option>
+            <option value="AUD">🇦🇺 AUD</option>
+            <option value="CHF">🇨🇭 CHF</option>
+            <option value="CNY">🇨🇳 CNY</option>
+          </select>
+        </div>
+        <span class="curr-swap" id="currSwap">⇄</span>
+        <div class="curr-field">
+          <label>إلى</label>
+          <select class="curr-select" id="currTo">
+            <option value="USD" selected>🇺🇸 USD</option>
+            <option value="EUR">🇪🇺 EUR</option>
+            <option value="GBP">🇬🇧 GBP</option>
+            <option value="MAD">🇲🇦 MAD</option>
+            <option value="JPY">🇯🇵 JPY</option>
+            <option value="CAD">🇨🇦 CAD</option>
+            <option value="AUD">🇦🇺 AUD</option>
+            <option value="CHF">🇨🇭 CHF</option>
+            <option value="CNY">🇨🇳 CNY</option>
+          </select>
+        </div>
+      </div>
+      <div class="curr-result-box" id="currResult">1 MAD = 0.10 USD</div>
+      <div class="curr-rate" id="currRate"></div>
+      <button class="curr-refresh" id="currRefresh">🔄 تحديث الأسعار</button>
+    </div>
+
+    <!-- === UNITS PANEL === -->
+    <div class="units-panel panel" id="unitsPanel">
+      <div class="units-row">
+        <div class="units-field">
+          <label>الفئة</label>
+          <select class="units-cat-select" id="unitsCategory">
+            <option value="length">📏 طول</option>
+            <option value="weight">⚖️ وزن</option>
+            <option value="temperature">🌡️ حرارة</option>
+            <option value="area">📐 مساحة</option>
+            <option value="volume">🧊 حجم</option>
+            <option value="speed">🚀 سرعة</option>
+          </select>
+        </div>
+      </div>
+      <div class="units-row units-pair">
+        <div class="units-field">
+          <label>من</label>
+          <input type="number" class="units-input" id="unitsFromVal" value="1" step="any" min="0">
+          <select class="units-select" id="unitsFromUnit"></select>
+        </div>
+        <span class="units-swap" id="unitsSwap">⇄</span>
+        <div class="units-field">
+          <label>إلى</label>
+          <div class="units-result-val" id="unitsResult">1</div>
+          <select class="units-select" id="unitsToUnit"></select>
+        </div>
+      </div>
+    </div>
+
+    <!-- === VOICE PANEL === -->
+    <div class="voice-panel panel" id="voicePanel">
+      <button class="voice-record-btn" id="voiceRecordBtn">🎤 اضغط لتتكلم</button>
+      <div class="voice-status" id="voiceStatus"></div>
+      <div class="voice-transcript" id="voiceTranscript"></div>
+      <div class="voice-result" id="voiceResult"></div>
+    </div>
+
+    <!-- MEMORY BAR -->
+    <div class="memory-bar">
+      <button class="mem-btn mem-mc" data-mem="mc">MC</button>
+      <button class="mem-btn" data-mem="mr">MR</button>
+      <button class="mem-btn" data-mem="mplus">M+</button>
+      <button class="mem-btn" data-mem="mminus">M−</button>
+      <span class="mem-indicator" id="memIndicator">M</span>
+    </div>
+
+    <!-- BUTTONS GRID -->
+    <div class="buttons" id="buttons">
+      <!-- Basic mode buttons (default) -->
+      <button class="btn btn-clear" data-action="clear">AC</button>
+      <button class="btn btn-clear" data-action="backspace">⌫</button>
+      <button class="btn btn-op" data-action="percent">%</button>
+      <button class="btn btn-op" data-action="divide">÷</button>
+
+      <button class="btn btn-num" data-value="7">7</button>
+      <button class="btn btn-num" data-value="8">8</button>
+      <button class="btn btn-num" data-value="9">9</button>
+      <button class="btn btn-op" data-action="multiply">×</button>
+
+      <button class="btn btn-num" data-value="4">4</button>
+      <button class="btn btn-num" data-value="5">5</button>
+      <button class="btn btn-num" data-value="6">6</button>
+      <button class="btn btn-op" data-action="subtract">−</button>
+
+      <button class="btn btn-num" data-value="1">1</button>
+      <button class="btn btn-num" data-value="2">2</button>
+      <button class="btn btn-num" data-value="3">3</button>
+      <button class="btn btn-op" data-action="add">+</button>
+
+      <button class="btn btn-num btn-neg" data-action="negate">±</button>
+      <button class="btn btn-num" data-value="0">0</button>
+      <button class="btn btn-num" data-action="decimal">.</button>
+      <button class="btn btn-equals" data-action="equals">=</button>
+    </div>
+  </div>
+
+  <footer>
+    <span>CalcMaster Ultra v<span id="verDisplay">2.1</span></span>
+  </footer>
+</div>
+<script src="script.js?v=2.1"></script>
+</body>
+</html>

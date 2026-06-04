@@ -1,0 +1,24 @@
+{
+  "name": "CalcMaster Ultra",
+  "short_name": "CalcUltra",
+  "description": "🚀 آلة حاسبة فائقة: أساسي، علمي، مبرمج، رسم بياني، عمر، تحويل، عملات حية، وحدات، صوت",
+  "start_url": "/calcmaster-ultra/index.html",
+  "display": "standalone",
+  "background_color": "#080816",
+  "theme_color": "#7c6aff",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
