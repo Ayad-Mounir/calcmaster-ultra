@@ -58,6 +58,7 @@ const Calc = (() => {
     // Convert
     langBtns: $$('.lang-btn'),
     convCurrSelect: $('#convCurrSelect'),
+    convInput: $('#convInput'),
     convertOutput: $('#convertOutput'),
     // Currency
     currAmount: $('#currAmount'), currFrom: $('#currFrom'), currTo: $('#currTo'),
@@ -207,6 +208,12 @@ const Calc = (() => {
     } else if (mode === 'convert') {
       setDisplay('✍️', false);
       setExpression('');
+      if (el.convInput) {
+        let cur = getDisplay();
+        if (cur && cur !== '✍️' && cur !== '0') el.convInput.value = parseNum(cur);
+        el.convInput.focus();
+        el.convInput.select();
+      }
       doConvert();
     } else if (mode === 'currency') {
       setDisplay('💰', false);
@@ -689,7 +696,7 @@ const Calc = (() => {
   }
 
   function doConvert() {
-    let num = parseNum(getDisplay());
+    let num = el.convInput ? parseFloat(el.convInput.value) || 0 : parseNum(getDisplay());
     if (state.mode !== 'convert') return;
     let lang = document.querySelector('.lang-btn.active').dataset.lang;
     let curr = el.convCurrSelect.value;
@@ -940,6 +947,9 @@ const Calc = (() => {
       });
     });
     el.convCurrSelect.addEventListener('change', doConvert);
+    if (el.convInput) {
+      el.convInput.addEventListener('input', doConvert);
+    }
     document.addEventListener('click', (e) => {
       if (e.target.closest('.btn-num') && state.mode === 'convert') {
         setTimeout(doConvert, 50);

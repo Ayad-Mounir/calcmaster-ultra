@@ -677,6 +677,24 @@ header {
   text-align: center; border: 1px solid var(--border-color);
 }
 
+/* ===== Keyframes ===== */
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
+  50% { box-shadow: 0 0 0 12px rgba(239,68,68,0); }
+}
+
+/* Conv Input (added) */
+.conv-input-row { width: 100%; margin-bottom: 4px; }
+.conv-input {
+  width: 100%; padding: 12px 14px;
+  background: var(--bg-card); color: var(--text-primary);
+  border: 1px solid var(--border-color); border-radius: var(--radius-xs);
+  font-size: 24px; font-weight: 700; text-align: center;
+  outline: none; direction: ltr;
+  transition: var(--transition);
+}
+.conv-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow); }
+
 /* Memory Bar */
 .memory-bar {
   display: flex; align-items: center; gap: 5px;
