@@ -1,4 +1,4 @@
-const CACHE = "cu-v1";
+const CACHE = "cu-v2";
 const VERSION_CHECK = "/calcmaster-ultra/version.json";
 
 self.addEventListener("install", (e) => {
@@ -29,7 +29,7 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("fetch", (e) => {
   // Bypass version.json — always fetch from network
   if (e.request.url.includes("version.json")) {
-    e.respondWith(fetch(e.request).catch(() => new Response('{"version":"2.0"}', {headers:{"Content-Type":"application/json"}})));
+    e.respondWith(fetch(e.request).catch(() => new Response('{"version":"2.1"}', {headers:{"Content-Type":"application/json"}})));
     return;
   }
   // For navigation, try network first, fallback to cache

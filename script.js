@@ -1018,8 +1018,8 @@ const Calc = (() => {
     setDisplay('0');
 
     // Show version
-    el.headerVer.textContent = 'v2.0';
-    if (el.verDisplay) el.verDisplay.textContent = '2.0';
+    el.headerVer.textContent = 'v2.1';
+    if (el.verDisplay) el.verDisplay.textContent = '2.1';
 
     // Initial currency fetch
     if (Object.keys(cachedRates).length > 0) {
